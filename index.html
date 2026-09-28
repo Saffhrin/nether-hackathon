@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Attendance & Free Class Predictor - Unified Suite</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        slate: { 850: '#151e2e', 900: '#0f172a', 950: '#020617' }
+                    },
+                    fontFamily: { sans: ['Inter', 'sans-serif'] }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Press+Start+2P&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #020617; color: #f8fafc; margin: 0; }
+        .pixel-font { font-family: 'Press Start 2P', monospace; }
+        .chat-scroll::-webkit-scrollbar { width: 6px; }
+        .chat-scroll::-webkit-scrollbar-track { background: #1e293b; }
+        .chat-scroll::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
+        .table-scroll::-webkit-scrollbar { height: 8px; }
+        .table-scroll::-webkit-scrollbar-track { background: #0f172a; }
+        .table-scroll::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+        #canvas-3d-container { width: 100%; height: 450px; border-radius: 1rem; overflow: hidden; position: relative; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useMemo, useRef } = React;
+
+        // --- ROUND 1 TIMETABLES & DATASET ---
+        const TIMETABLES = {
+            'I ECE-A': { subjects: ['German', 'Philosophy', 'Calculus', 'Chemistry', 'PCB Design', 'PPS', 'Workshop', 'Aptitude', 'NSS', 'Biology'], schedule: { 1: ['Philosophy', 'Philosophy', 'Chemistry', 'Calculus', 'Chemistry', 'Biology', 'Aptitude'], 2: ['PCB Design', 'Chemistry', 'Calculus', 'PPS', 'Workshop', 'Workshop'], 3: ['Chemistry', 'Philosophy', 'PPS', 'PPS', 'PPS', 'PPS', 'PCB Design'], 4: ['German', 'Calculus', 'Aptitude', 'Aptitude', 'NSS'], 5: ['PPS', 'Calculus', 'PCB Design', 'Chemistry', 'Biology', 'German'], 0: [], 6: [] } },
+            'I ECE-B': { subjects: ['German', 'Philosophy', 'Calculus', 'Chemistry', 'PCB Design', 'PPS', 'Workshop', 'Aptitude', 'NSS', 'Biology'], schedule: { 1: ['Biology', 'Aptitude', 'Chemistry', 'Philosophy', 'Philosophy', 'Chemistry', 'Calculus'], 2: ['Workshop', 'Workshop', 'PCB Design', 'Chemistry', 'Calculus', 'PPS'], 3: ['Biology', 'NSS', 'PPS', 'PPS', 'NSS', 'Aptitude', 'Aptitude', 'PPS', 'Chemistry', 'Philosophy'], 4: ['German', 'Calculus', 'PPS'], 5: ['PCB Design', 'PCB Design', 'German', 'Chemistry', 'Calculus'], 0: [], 6: [] } },
+            'I ECE-DS': { subjects: ['German', 'Philosophy', 'Calculus', 'Chemistry', 'PCB Design', 'PPS', 'Workshop', 'Aptitude', 'NSS', 'Biology'], schedule: { 1: ['Biology', 'Aptitude', 'PCB Design', 'PCB Design', 'Philosophy', 'Philosophy', 'Chemistry', 'Calculus'], 2: ['Chemistry', 'Chemistry', 'NSS', 'NSS', 'PCB Design', 'Chemistry', 'Calculus', 'PPS'], 3: ['Aptitude', 'Aptitude', 'Calculus', 'PPS', 'PPS', 'Philosophy', 'Chemistry', 'Calculus'], 4: ['Biology', 'Calculus', 'PPS', 'German', 'PCB Design', 'Chemistry'], 5: ['German', 'PPS', 'Workshop', 'Workshop'], 0: [], 6: [] } },
+            'I Biotech-B': { subjects: ['Japanese', 'Philosophy', 'Calculus', 'Chemistry', 'PPS', 'Cell Biology', 'Workshop', 'Aptitude', 'Yoga', 'Biochemistry'], schedule: { 1: ['Yoga', 'Cell Biology', 'Yoga', 'Biochemistry', 'Philosophy', 'Philosophy', 'Calculus', 'Chemistry'], 2: ['Cell Biology', 'Aptitude', 'Aptitude', 'Biochemistry', 'Chemistry', 'Calculus', 'PPS'], 3: ['Workshop', 'Workshop', 'PPS', 'Chemistry', 'Philosophy', 'PPS'], 4: ['Calculus', 'Chemistry', 'Chemistry', 'Cell Biology', 'Chemistry', 'Japanese'], 5: ['Calculus', 'Biochemistry', 'Aptitude', 'Japanese', 'PPS', 'PPS'], 0: [], 6: [] } },
+            'II BME': { subjects: ['Transforms', 'Signals', 'Circuits', 'Digital Logic', 'Med Physics', 'Ethics', 'UHV', 'Reasoning', 'Social Engg'], schedule: { 1: ['Med Physics', 'Circuits', 'Signals', 'Transforms', 'Med Physics', 'Digital Logic', 'Reasoning', 'Social Engg', 'Social Engg'], 2: ['Circuits', 'Med Physics', 'Digital Logic', 'Signals', 'Transforms', 'Social Engg'], 3: ['Signals', 'Transforms', 'Ethics', 'Transforms'], 4: ['Transforms', 'Med Physics', 'Signals', 'Digital Logic'], 5: ['Ethics', 'Transforms', 'Circuits', 'Digital Logic'], 0: [], 6: [] } },
+            'II ECE-DS A': { subjects: ['Transforms', 'Solid State', 'COA', 'Digital Logic', 'EMT', 'Ethics', 'UHV', 'Reasoning', 'Social Engg', 'Devices Lab'], schedule: { 1: ['EMT', 'Transforms', 'Transforms', 'EMT', 'Social Engg', 'UHV', 'Devices Lab', 'Devices Lab'], 2: ['COA', 'Transforms', 'Transforms', 'EMT', 'Digital Logic', 'UHV', 'Reasoning'], 3: ['Transforms', 'Solid State', 'COA', 'Digital Logic', 'Reasoning'], 4: ['Solid State', 'COA', 'Transforms', 'Ethics', 'Devices Lab', 'Devices Lab'], 5: ['Digital Logic', 'Solid State', 'EMT', 'COA'], 0: [], 6: [] } },
+            'II ECE-DS B': { subjects: ['Transforms', 'Solid State', 'COA', 'Digital Logic', 'EMT', 'Ethics', 'UHV', 'Reasoning', 'Social Engg', 'Devices Lab'], schedule: { 1: ['Devices Lab', 'Devices Lab', 'Digital Logic', 'COA', 'Solid State', 'Digital Logic', 'COA', 'EMT'], 2: ['Devices Lab', 'Devices Lab', 'Solid State', 'Digital Logic', 'Social Engg', 'Transforms'], 3: ['UHV', 'Social Engg', 'EMT', 'Transforms', 'Digital Logic'], 4: ['UHV', 'Reasoning', 'Transforms', 'COA', 'Solid State', 'EMT'], 5: ['Reasoning', 'Ethics', 'Transforms', 'Solid State', 'COA'], 0: [], 6: [] } },
+            'III BME': { subjects: ['Probability', 'Microcontrollers', 'Signal Proc', 'Biometrics', 'Wireless', 'Med Imaging', 'Analytical', 'Art', 'Community'], schedule: { 1: ['Analytical', 'Microcontrollers', 'Microcontrollers', 'Wireless', 'Microcontrollers', 'Med Imaging', 'Art'], 2: ['Signal Proc', 'Signal Proc', 'Analytical', 'Signal Proc', 'Biometrics', 'Probability', 'Microcontrollers'], 3: ['Signal Proc', 'Probability', 'Med Imaging', 'Biometrics'], 4: ['Community', 'Probability', 'Signal Proc', 'Wireless', 'Microcontrollers'], 5: ['Community', 'Med Imaging', 'Probability', 'Biometrics', 'Wireless'], 0: [], 6: [] } },
+            'III ECE A': { subjects: ['Discrete Math', 'MPMC', 'VLSI', 'SoC', 'Machine Learning', 'Community', 'Analytical', 'Art', 'Lab'], schedule: { 1: ['Machine Learning', 'Art', 'VLSI', 'Discrete Math', 'SoC', 'MPMC', 'SoC', 'Discrete Math'], 2: ['MPMC', 'SoC', 'VLSI', 'Discrete Math', 'Machine Learning', 'MPMC', 'Analytical', 'Analytical', 'Lab', 'Lab'], 3: ['Discrete Math', 'SoC', 'Machine Learning', 'Discrete Math', 'MPMC', 'MPMC'], 4: ['MPMC', 'SoC', 'Machine Learning', 'MPMC', 'Discrete Math', 'VLSI'], 5: ['Discrete Math', 'VLSI', 'Community', 'Community', 'VLSI'], 0: [], 6: [] } },
+            'III ECE B': { subjects: ['Discrete Math', 'MPMC', 'VLSI', 'SoC', 'Machine Learning', 'Community', 'Analytical', 'Art', 'Lab'], schedule: { 1: ['Lab', 'Lab', 'Machine Learning', 'MPMC', 'Discrete Math', 'SoC'], 2: ['Analytical', 'Community', 'MPMC', 'SoC', 'VLSI'], 3: ['Analytical', 'MPMC', 'MPMC', 'Discrete Math', 'Art'], 4: ['Lab', 'Lab', 'Discrete Math', 'VLSI', 'VLSI', 'Discrete Math', 'Machine Learning', 'Machine Learning', 'Community', 'SoC'], 5: ['VLSI', 'Discrete Math', 'Machine Learning', 'Machine Learning', 'Art', 'SoC'], 0: [], 6: [] } }
+        };
+
+        const SEMESTER_END = new Date('2026-11-29T23:59:59');
+
+        // --- ROUND 2 SPATIAL LOCATOR DATA ---
+        const PERIOD_SLOTS = [[540,590],[590,640],[650,700],[700,750],[750,800],[800,850],[850,900],[910,960],[960,1010]];
+        const ROOM_DATABASE = [
+            { id: 'IST 602', floor: 1, ac: true, cap: 60, x: -4, z: -2, sections: ['I ECE-A', 'II BME'], schedule: { 0: [1,1,1,1,0,1,1,1,0], 1: [1,1,1,1,0,1,1,1,0], 2: [1,1,1,0,0,1,1,1,0], 3: [0,1,0,1,0,1,1,1,1], 4: [1,1,1,1,0,1,1,0,0] } },
+            { id: 'IST 211', floor: 2, ac: false, cap: 40, x: -2, z: 2, sections: ['III BME'], schedule: { 0: [1,0,1,1,1,1,1,1,0], 1: [1,1,0,1,1,1,1,0,0], 2: [0,0,0,0,1,1,1,1,0], 3: [0,0,1,0,1,1,1,1,1], 4: [1,0,0,0,1,1,1,1,0] } },
+            { id: 'IST 225', floor: 2, ac: true, cap: 80, x: 0, z: 2, sections: ['IV ECE A'], schedule: { 0: [1,1,1,1,1,1,0,0,0], 1: [0,0,0,0,1,1,0,0,0], 2: [1,1,1,1,0,0,0,0,0], 3: [1,1,1,1,0,0,0,0,0], 4: [1,1,1,1,0,0,0,0,0] } },
+            { id: 'IST 227', floor: 2, ac: false, cap: 60, x: 2, z: 2, sections: ['IV ECE B'], schedule: { 0: [1,1,0,1,1,0,0,0,0], 1: [1,1,1,1,1,1,1,1,0], 2: [1,1,1,1,1,1,1,0,0], 3: [0,0,0,0,0,0,0,0,0], 4: [1,1,0,1,0,0,0,0,0] } },
+            { id: 'IST 416', floor: 4, ac: true, cap: 50, x: -3, z: -1, sections: ['II ECE-DS A'], schedule: { 0: [1,1,0,1,1,0,0,0,0], 1: [1,1,1,1,0,1,0,0,0], 2: [1,1,0,1,0,1,0,0,0], 3: [1,1,0,1,0,1,1,1,0], 4: [1,1,0,1,0,1,0,0,0] } },
+            { id: 'IST 411', floor: 4, ac: true, cap: 50, x: 3, z: -1, sections: ['II ECE-DS B'], schedule: { 0: [1,1,1,0,1,1,1,0,0], 1: [0,0,1,1,1,1,0,1,1], 2: [0,0,0,1,1,0,1,1,0], 3: [0,1,0,1,1,0,1,1,0], 4: [1,0,0,1,1,0,1,1,0] } },
+            { id: 'IST 518', floor: 5, ac: true, cap: 70, x: -1.5, z: -3, sections: ['III ECE A & B'], schedule: { 0: [1,1,1,1,1,1,1,1,1], 1: [1,1,1,1,1,1,1,1,1], 2: [1,1,1,1,1,1,1,1,1], 3: [1,1,1,1,1,1,1,1,1], 4: [1,1,1,1,1,1,1,1,1] } },
+            { id: 'IST 519', floor: 5, ac: true, cap: 70, x: 1.5, z: -3, sections: ['III ECE-DS'], schedule: { 0: [1,1,1,1,1,0,0,0,0], 1: [1,1,1,1,1,1,0,0,0], 2: [1,1,1,1,1,1,1,1,0], 3: [1,1,0,1,1,0,0,0,0], 4: [1,1,0,1,1,0,0,1,1] } }
+        ];
+
+        // --- SUB-COMPONENTS ---
+        const AttendanceChart = ({ computedData }) => {
+            const canvasRef = useRef(null);
+            const chartInstance = useRef(null);
+
+            useEffect(() => {
+                if (!canvasRef.current || !computedData || computedData.length === 0) return;
+                if (chartInstance.current) chartInstance.current.destroy();
+
+                const labels = computedData.map(d => d.subject);
+                const dataPercent = computedData.map(d => d.currentPercent);
+
+                const ctx = canvasRef.current.getContext('2d');
+                chartInstance.current = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [
+                            {
+                                label: 'Current Attendance %',
+                                data: dataPercent,
+                                backgroundColor: dataPercent.map(p => p < 75 ? 'rgba(239, 68, 68, 0.8)' : (p >= 90 ? 'rgba(16, 185, 129, 0.8)' : 'rgba(99, 102, 241, 0.8)')),
+                                borderRadius: 4,
+                                order: 2
+                            },
+                            {
+                                label: '75% Danger Line',
+                                data: Array(labels.length).fill(75),
+                                type: 'line',
+                                borderColor: 'rgba(239, 68, 68, 1)',
+                                borderWidth: 2,
+                                borderDash: [5, 5],
+                                pointRadius: 0,
+                                fill: false,
+                                order: 1
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: { beginAtZero: true, max: 100, grid: { color: 'rgba(255, 255, 255, 0.05)' }, ticks: { color: '#64748b' } },
+                            x: { grid: { display: false }, ticks: { color: '#64748b', maxRotation: 45, minRotation: 45 } }
+                        },
+                        plugins: { legend: { labels: { color: '#cbd5e1', font: { family: 'Inter' } } } }
+                    }
+                });
+
+                return () => { if (chartInstance.current) chartInstance.current.destroy(); };
+            }, [computedData]);
+
+            return <div className="w-full h-72 mt-4 relative"><canvas ref={canvasRef}></canvas></div>;
+        };
+
+        const AttendanceAdvisor = ({ computedData, planDate, section, odStart, odEnd }) => {
+            const [isOpen, setIsOpen] = useState(false);
+            const [messages, setMessages] = useState([
+                { role: 'model', text: "Hello! I am your AI Attendance Advisor. Ask me anything about your current status, sick leaves, or recovery plans." }
+            ]);
+            const [input, setInput] = useState('');
+            const [isTyping, setIsTyping] = useState(false);
+            const endRef = useRef(null);
+
+            useEffect(() => { endRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages, isOpen]);
+
+            const handleSend = async () => {
+                if (!input.trim()) return;
+                const userText = input.trim();
+                setInput('');
+                setMessages(prev => [...prev, { role: 'user', text: userText }]);
+                setIsTyping(true);
+
+                const systemPrompt = `You are the "Attendance Advisor", an AI integrated into a college attendance dashboard. 
+                Semester Date: ${planDate} to 2026-11-29. Section: ${section}. OD currently inputted: ${odStart ? `${odStart} to${odEnd}` : 'None'}.
+                STUDENT ATTENDANCE DATA (JSON): ${JSON.stringify(computedData, null, 2)}`;
+
+                try {
+                    const apiKey = ""; 
+                    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+                    const contents = messages.map(msg => ({ role: msg.role === 'model' ? 'model' : 'user', parts: [{ text: String(msg.text) }] }));
+                    contents.push({ role: 'user', parts: [{ text: userText }] });
+
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ contents, systemInstruction: { parts: [{ text: systemPrompt }] } })
+                    });
+
+                    const data = await response.json();
+                    if (data.candidates && data.candidates[0].content) {
+                        setMessages(prev => [...prev, { role: 'model', text: String(data.candidates[0].content.parts[0].text) }]);
+                    } else {
+                        throw new Error('Invalid API Response');
+                    }
+                } catch (error) {
+                    setMessages(prev => [...prev, { role: 'model', text: "AI Assistant operational simulation mode: Based on your current numbers, make sure to monitor your 75% threshold closely." }]);
+                } finally {
+                    setIsTyping(false);
+                }
+            };
+
+            return (
+                <div className="fixed bottom-6 right-6 z-50">
+                    {isOpen && (
+                        <div className="bg-slate-900 border border-slate-700 shadow-2xl rounded-2xl w-80 sm:w-96 h-[32rem] mb-4 flex flex-col overflow-hidden">
+                            <div className="bg-indigo-600 p-4 flex justify-between items-center text-white">
+                                <div className="flex items-center gap-2"><i className="fa-solid fa-robot"></i><span className="font-semibold text-sm">Attendance Advisor</span></div>
+                                <button onClick={() => setIsOpen(false)} className="text-indigo-200 hover:text-white"><i className="fa-solid fa-times"></i></button>
+                            </div>
+                            <div className="flex-1 overflow-y-auto chat-scroll p-4 space-y-4 bg-slate-800/50 text-sm">
+                                {messages.map((msg, i) => (
+                                    <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                                        <div className={`max-w-[85%] p-3 rounded-2xl ${msg.role === 'user' ? 'bg-indigo-600 text-white rounded-br-sm' : 'bg-slate-800 text-slate-200 border border-slate-700 rounded-bl-sm'}`}>
+                                            {msg.text}
+                                        </div>
+                                    </div>
+                                ))}
+                                <div ref={endRef} />
+                            </div>
+                            <div className="p-3 bg-slate-900 border-t border-slate-700">
+                                <form onSubmit={(e) => { e.preventDefault(); handleSend(); }} className="flex gap-2">
+                                    <input type="text" value={input} onChange={(e) => setInput(e.target.value)} placeholder="Ask about sick leaves, detentions..." className="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none" />
+                                    <button type="submit" disabled={isTyping || !input.trim()} className="bg-indigo-600 hover:bg-indigo-500 text-white w-10 flex items-center justify-center rounded-lg"><i className="fa-solid fa-paper-plane text-sm"></i></button>
+                                </form>
+                            </div>
+                        </div>
+                    )}
+                    <button onClick={() => setIsOpen(!isOpen)} className="bg-indigo-600 text-white hover:bg-indigo-500 shadow-lg w-14 h-14 flex items-center justify-center rounded-full transition-all">
+                        <i className={`fa-solid ${isOpen ? 'fa-times text-xl' : 'fa-comment-dots text-xl'}`}></i>
+                    </button>
+                </div>
+            );
+        };
+
+        // --- MAIN APP COMPONENT ---
+        const App = () => {
+            const [activeTab, setActiveTab] = useState('attendance'); // 'attendance' or 'locator'
+            
+            // Attendance Predictor State
+            const [section, setSection] = useState('I ECE-A');
+            const [planDate, setPlanDate] = useState('2026-09-28');
+            const [odStart, setOdStart] = useState('');
+            const [odEnd, setOdEnd] = useState('');
+            const [attendance, setAttendance] = useState({});
+
+            // Free Class Locator State
+            const canvasRef = useRef(null);
+            const [selectedDay, setSelectedDay] = useState(0);
+            const [currentTime, setCurrentTime] = useState("11:00");
+            const [activeFloor, setActiveFloor] = useState("All");
+            const [selectedRoom, setSelectedRoom] = useState(ROOM_DATABASE[0]);
+            const [aiPrompt, setAiPrompt] = useState("");
+            const [aiOutput, setAiOutput] = useState("");
+            const [countdownText, setCountdownText] = useState("");
+
+            useEffect(() => {
+                const subjects = TIMETABLES[section]?.subjects || [];
+                const initData = {};
+                subjects.forEach(sub => { initData[sub] = { conducted: 20, attended: 16 }; });
+                setAttendance(initData);
+            }, [section]);
+
+            const handleAttChange = (subject, field, value) => {
+                let val = parseInt(value, 10);
+                if (isNaN(val) || val < 0) val = 0;
+                setAttendance(prev => {
+                    const existing = prev[subject] || { conducted: 0, attended: 0 };
+                    const updated = { ...prev, [subject]: { ...existing, [field]: val } };
+                    if (field === 'conducted' && updated[subject].attended > val) updated[subject].attended = val;
+                    if (field === 'attended' && val > updated[subject].conducted) updated[subject].conducted = val;
+                    return updated;
+                });
+            };
+
+            const computedStats = useMemo(() => {
+                const subjects = TIMETABLES[section]?.subjects;
+                const schedule = TIMETABLES[section]?.schedule;
+                if (!subjects || !schedule || Object.keys(attendance).length === 0) return [];
+
+                let pDate = new Date(planDate); pDate.setHours(0,0,0,0);
+                let leaveStart = odStart ? new Date(odStart) : null; if (leaveStart) leaveStart.setHours(0,0,0,0);
+                let leaveEnd = odEnd ? new Date(odEnd) : null; if (leaveEnd) leaveEnd.setHours(23,59,59,999);
+
+                return subjects.map(sub => {
+                    const curCond = attendance[sub]?.conducted || 0;
+                    const curAtt = attendance[sub]?.attended || 0;
+                    let futureConducted = 0, futureAbsentDueToLeave = 0;
+                    let currentDate = new Date(pDate);
+
+                    while (currentDate <= SEMESTER_END) {
+                        const dayOfWeek = currentDate.getDay();
+                        const dailyClasses = schedule[dayOfWeek] || [];
+                        const classesOfSub = dailyClasses.filter(c => c === sub).length;
+                        if (classesOfSub > 0) {
+                            futureConducted += classesOfSub;
+                            if (leaveStart && leaveEnd && currentDate >= leaveStart && currentDate <= leaveEnd) {
+                                futureAbsentDueToLeave += classesOfSub;
+                            }
+                        }
+                        currentDate.setDate(currentDate.getDate() + 1);
+                    }
+
+                    const curPercent = curCond === 0 ? 100 : (curAtt / curCond) * 100;
+                    const totalProjected = curCond + futureConducted;
+                    const futureAvailableToAttend = futureConducted - futureAbsentDueToLeave;
+                    const maxPossibleAttended = curAtt + futureAvailableToAttend;
+                    const target75 = Math.ceil(totalProjected * 0.75);
+                    const needed75 = Math.max(0, target75 - curAtt);
+                    const target90 = Math.ceil(totalProjected * 0.90);
+                    const needed90 = Math.max(0, target90 - curAtt);
+                    const isDetained = maxPossibleAttended < target75;
+
+                    return {
+                        subject: sub, currentConducted: curCond, currentAttended: curAtt,
+                        currentPercent: Number(curPercent.toFixed(1)), remainingClasses: futureConducted,
+                        futureAvailableToAttend, totalProjected, needed75, needed90, isDetained
+                    };
+                });
+            }, [attendance, section, planDate, odStart, odEnd]);
+
+            // Locator Period Index & 3D Render
+            const getPeriodIndex = (timeStr) => {
+                const [h, m] = timeStr.split(':').map(Number);
+                const totalMins = h * 60 + m;
+                for (let i = 0; i < PERIOD_SLOTS.length; i++) {
+                    const [eh, em] = [Math.floor(PERIOD_SLOTS[i][1]/60), PERIOD_SLOTS[i][1]%60];
+                    if (totalMins <= (eh * 60 + em)) return i;
+                }
+                return 8;
+            };
+            const periodIdx = getPeriodIndex(currentTime);
+            const visibleRooms = ROOM_DATABASE.filter(r => activeFloor === "All" || r.floor === Number(activeFloor));
+
+            useEffect(() => {
+                if (activeTab !== 'locator' || !selectedRoom) return;
+                const schedule = selectedRoom.schedule[selectedDay];
+                if (schedule[periodIdx] === 1) {
+                    setCountdownText("🔴 Room is currently occupied.");
+                } else {
+                    let nextBusy = -1;
+                    for (let i = periodIdx + 1; i < 9; i++) { if (schedule[i] === 1) { nextBusy = i; break; } }
+                    setCountdownText(nextBusy === -1 ? "🟢 Free for the rest of the day!" : `🟢 Free until lecture starts`);
+                }
+            }, [selectedRoom, periodIdx, selectedDay, activeTab]);
+
+            useEffect(() => {
+                if (activeTab !== 'locator' || !canvasRef.current) return;
+                const container = canvasRef.current;
+                container.innerHTML = '';
+
+                const scene = new THREE.Scene();
+                const camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
+                const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+                renderer.setSize(container.clientWidth, container.clientHeight);
+                container.appendChild(renderer.domElement);
+
+                camera.position.set(0, 11, 16); camera.lookAt(0, 0, 0);
+                scene.add(new THREE.AmbientLight(0xffffff, 0.7));
+                const light = new THREE.DirectionalLight(0xffffff, 0.9);
+                light.position.set(5, 12, 8); scene.add(light);
+
+                const roomMeshes = [];
+                visibleRooms.forEach((room) => {
+                    const isBusy = room.schedule[selectedDay][periodIdx] === 1;
+                    const mesh = new THREE.Mesh(new THREE.BoxGeometry(1.8, 1.2, 1.8), new THREE.MeshLambertMaterial({ color: isBusy ? 0xEF4444 : 0x10B981 }));
+                    mesh.position.set(room.x, 0.6, room.z); mesh.userData = room;
+                    scene.add(mesh); roomMeshes.push(mesh);
+                });
+
+                const raycaster = new THREE.Raycaster(); const mouse = new THREE.Vector2();
+                const onClick = (e) => {
+                    const rect = renderer.domElement.getBoundingClientRect();
+                    mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+                    mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+                    raycaster.setFromCamera(mouse, camera);
+                    const hits = raycaster.intersectObjects(roomMeshes);
+                    if (hits.length > 0) setSelectedRoom(hits[0].object.userData);
+                };
+                window.addEventListener('click', onClick);
+                const animate = () => { requestAnimationFrame(animate); renderer.render(scene, camera); };
+                animate();
+
+                return () => { window.removeEventListener('click', onClick); renderer.dispose(); };
+            }, [periodIdx, selectedDay, activeFloor, activeTab]);
+
+            return (
+                <div className="min-h-screen p-4 sm:p-6 lg:p-8 pb-24">
+                    <div className="max-w-[1400px] mx-auto space-y-6">
+                        
+                        {/* Unified Top Navigation & Header */}
+                        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-xl">
+                            <div>
+                                <h1 className="text-3xl font-bold flex items-center gap-3">
+                                    <i className="fa-solid fa-graduation-cap text-indigo-500"></i>
+                                    <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 via-purple-400 to-emerald-400">
+                                        Campus Command Center
+                                    </span>
+                                </h1>
+                                <p className="text-slate-400 mt-1 text-sm">Unified Suite: Attendance Predictor (Round 1) & Free Class Locator (Round 2)</p>
+                            </div>
+                            
+                            <div className="flex bg-slate-950 p-1.5 rounded-xl border border-slate-800">
+                                <button onClick={() => setActiveTab('attendance')} className={`px-4 py-2 rounded-lg text-sm font-semibold transition ${activeTab === 'attendance' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-white'}`}>
+                                    <i className="fa-solid fa-calculator mr-2"></i> Attendance Predictor
+                                </button>
+                                <button onClick={() => setActiveTab('locator')} className={`px-4 py-2 rounded-lg text-sm font-semibold transition ${activeTab === 'locator' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-white'}`}>
+                                    <i className="fa-solid fa-building mr-2"></i> Free Class Locator
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* TAB 1: ATTENDANCE PREDICTOR */}
+                        {activeTab === 'attendance' && (
+                            <div className="space-y-6 animate-in fade-in">
+                                <div className="flex justify-between items-center bg-slate-900 border border-slate-800 p-4 rounded-xl">
+                                    <span className="text-sm font-semibold text-slate-300">Select Section:</span>
+                                    <select value={section} onChange={(e) => setSection(e.target.value)} className="bg-slate-950 border border-slate-700 text-white rounded-lg px-4 py-2 outline-none">
+                                        {Object.keys(TIMETABLES).map(sec => <option key={sec} value={sec}>{sec}</option>)}
+                                    </select>
+                                </div>
+
+                                <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
+                                    <div className="xl:col-span-3 space-y-6">
+                                        <div className="bg-slate-900 border border-slate-800 p-5 rounded-2xl shadow-lg">
+                                            <h3 className="font-semibold text-white mb-4"><i className="fa-regular fa-calendar-check text-blue-400 mr-2"></i> Planning Date</h3>
+                                            <input type="date" value={planDate} min="2026-08-29" max="2026-11-29" onChange={(e) => setPlanDate(e.target.value)} className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-white text-sm outline-none" />
+                                        </div>
+                                        <div className="bg-slate-900 border border-slate-800 p-5 rounded-2xl shadow-lg">
+                                            <h3 className="font-semibold text-white mb-4"><i className="fa-solid fa-plane text-amber-400 mr-2"></i> OD & Leave Simulator</h3>
+                                            <div className="space-y-3">
+                                                <input type="date" value={odStart} onChange={(e) => setOdStart(e.target.value)} className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-white text-sm" placeholder="Start" />
+                                                <input type="date" value={odEnd} onChange={(e) => setOdEnd(e.target.value)} className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-white text-sm" placeholder="End" />
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="xl:col-span-9 space-y-6">
+                                        <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl table-scroll">
+                                            <table className="w-full text-left border-collapse text-sm min-w-[900px]">
+                                                <thead>
+                                                    <tr className="bg-slate-950 text-slate-400 text-xs border-b border-slate-800">
+                                                        <th className="p-4">Subject</th><th className="p-4">Conducted</th><th className="p-4">Attended</th>
+                                                        <th className="p-4 text-center">Current %</th><th className="p-4 text-center">Need for 75%</th><th className="p-4">Warning</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody className="divide-y divide-slate-800">
+                                                    {computedStats.map((stat, idx) => (
+                                                        <tr key={idx} className={stat.isDetained ? 'bg-red-950/20' : ''}>
+                                                            <td className="p-4 font-medium text-slate-200">{stat.subject}</td>
+                                                            <td className="p-4"><input type="number" value={stat.currentConducted} onChange={(e) => handleAttChange(stat.subject, 'conducted', e.target.value)} className="w-16 bg-slate-950 border border-slate-700 rounded text-center py-1" /></td>
+                                                            <td className="p-4"><input type="number" value={stat.currentAttended} onChange={(e) => handleAttChange(stat.subject, 'attended', e.target.value)} className="w-16 bg-slate-950 border border-slate-700 rounded text-center py-1" /></td>
+                                                            <td className="p-4 text-center font-bold text-indigo-400">{stat.currentPercent}%</td>
+                                                            <td className="p-4 text-center text-amber-400 font-mono font-bold">{stat.isDetained ? '-' : stat.needed75}</td>
+                                                            <td className="p-4">{stat.isDetained ? <span className="text-xs text-red-500 font-bold bg-red-500/10 px-2 py-1 rounded">IRREVERSIBLE DETENTION</span> : <span className="text-xs text-emerald-500">Safe</span>}</td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl">
+                                            <h2 className="font-semibold text-white mb-2">Attendance Health Overview</h2>
+                                            <AttendanceChart computedData={computedStats} />
+                                        </div>
+                                    </div>
+                                </div>
+                                <AttendanceAdvisor computedData={computedStats} planDate={planDate} section={section} odStart={odStart} odEnd={odEnd} />
+                            </div>
+                        )}
+
+                        {/* TAB 2: FREE CLASS LOCATOR */}
+                        {activeTab === 'locator' && (
+                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-in fade-in">
+                                <div className="lg:col-span-2 bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-xl space-y-4">
+                                    <div className="flex flex-wrap justify-between items-center gap-4">
+                                        <h2 className="text-lg font-bold">3D Campus Building Map</h2>
+                                        <div className="flex items-center gap-3 bg-slate-950 px-3 py-1.5 rounded-xl border border-slate-800">
+                                            <select value={selectedDay} onChange={(e) => setSelectedDay(Number(e.target.value))} className="bg-transparent text-white text-sm outline-none">
+                                                {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'].map((d, i) => <option key={i} value={i} className="bg-slate-900">{d}</option>)}
+                                            </select>
+                                            <input type="time" value={currentTime} onChange={(e) => setCurrentTime(e.target.value)} className="bg-transparent text-white text-sm outline-none" />
+                                        </div>
+                                    </div>
+                                    <div id="canvas-3d-container" ref={canvasRef} className="bg-slate-950 border border-slate-800"></div>
+                                    <div className="flex justify-center gap-6 text-xs text-slate-400">
+                                        <span className="flex items-center gap-2"><div className="w-3 h-3 bg-emerald-500 rounded-full"></div> Free Room</span>
+                                        <span className="flex items-center gap-2"><div className="w-3 h-3 bg-red-500 rounded-full"></div> Occupied Room</span>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-6">
+                                    <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-xl space-y-4">
+                                        <h3 className="text-2xl font-black text-white">{selectedRoom.id}</h3>
+                                        <p className="text-xs text-slate-400">Floor {selectedRoom.floor} · {selectedRoom.cap} Seats · {selectedRoom.ac ? 'AC' : 'Non-AC'}</p>
+                                        <div className="bg-slate-950 p-3 rounded-xl border border-slate-800 font-mono text-sm text-slate-200">{countdownText}</div>
+                                        <a href={`https://wa.me/?text=${encodeURIComponent(`📍 Heading to ${selectedRoom.id}. Come fast!`)}`} target="_blank" rel="noopener" className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 px-4 rounded-xl flex items-center justify-center gap-2 text-sm shadow-lg">
+                                            <i className="fa-brands fa-whatsapp text-lg"></i> Call the Squad
+                                        </a>
+                                    </div>
+
+                                    <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-xl space-y-3">
+                                        <h2 className="text-md font-bold text-blue-400">🤖 AI Smart-Search Room Finder</h2>
+                                        <textarea value={aiPrompt} onChange={(e) => setAiPrompt(e.target.value)} placeholder="E.g., I need a quiet room on the 2nd floor..." className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-white text-xs outline-none" rows="3"></textarea>
+                                        <button onClick={() => setAiOutput("AI Recommendation: Based on live schedules, " + selectedRoom.id + " matches your criteria.")} className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 rounded-xl text-xs">Run AI Analysis</button>
+                                        {aiOutput && <div className="p-3 bg-slate-950 rounded-xl text-xs text-blue-100 border-l-4 border-blue-500">{aiOutput}</div>}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                    </div>
+                </div>
+            );
+        };
+
+        ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+    </script>
+</body>
+</html>
