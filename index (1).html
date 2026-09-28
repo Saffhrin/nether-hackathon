@@ -1,0 +1,143 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><title>Free Class Locator</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Rubik:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0d0b1a;--pn:#171430;--ink:#f6ecd4;--mut:#a9a3c2;--acc:#ff9f43;--free:#3ddc84;--busy:#ff5d5d;--bd:#2b2752;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:light){:root{--bg:#f3e9d2;--pn:#fff8e8;--ink:#2a2140;--mut:#6b6484;--bd:#e0d3b0;--free:#178a4d;--busy:#d23a3a;--acc:#c85a0a}}
+html{scroll-padding-top:env(safe-area-inset-top,0px);scroll-behavior:smooth}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 Rubik,system-ui,sans-serif}
+.px,h1,h2,.rm,.big{font-family:'Press Start 2P',monospace}
+header{display:flex;flex-wrap:wrap;gap:16px;justify-content:space-between;align-items:flex-end;padding:28px 5vw 18px;background:linear-gradient(160deg,rgba(255,159,67,.18),transparent 60%)}
+.px{color:var(--acc);font-size:11px;letter-spacing:1px}h1{font-size:clamp(20px,4.5vw,38px);margin:10px 0;line-height:1.3}header p{margin:0;color:var(--mut);max-width:560px}
+.clock{background:var(--pn);border:1px solid var(--bd);border-radius:14px;padding:12px 16px;min-width:250px}#clk{font:22px 'Press Start 2P',monospace;color:var(--acc)}#dayl{color:var(--mut);font-size:13px;margin:6px 0}
+.tt{display:flex;gap:6px;flex-wrap:wrap}
+select,input,button{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--bd);border-radius:8px;padding:7px 10px}
+button{cursor:pointer;background:var(--acc);color:#1a1020;font-weight:700;border:0}button.g{background:var(--bg);color:var(--ink);border:1px solid var(--bd)}
+nav{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;display:flex;gap:8px;padding:8px 5vw;background:var(--bg);border-bottom:1px solid var(--bd);overflow-x:auto}nav a{color:var(--ink);text-decoration:none;padding:6px 12px;border:1px solid var(--bd);border-radius:20px;white-space:nowrap;font-size:13px}
+main{padding:0 5vw 60px;max-width:1200px;margin:auto}section{margin-top:34px}h2{font-size:15px;line-height:1.6;margin:0 0 14px}
+.panel{background:var(--pn);border:1px solid var(--bd);border-radius:16px;padding:18px}
+.ask{display:flex;gap:8px;flex-wrap:wrap}.ask input{flex:1;min-width:220px;padding:13px;font-size:15px}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}.chip{font-size:12px;padding:5px 10px;border-radius:20px;border:1px solid var(--bd);color:var(--mut);cursor:pointer;background:transparent}.chip.on{color:var(--acc);border-color:var(--acc);cursor:default}
+.res{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px;margin-top:14px}
+.card{background:var(--bg);border:1px solid var(--bd);border-radius:12px;padding:12px;cursor:pointer}.card:hover{border-color:var(--acc)}.card b{font-size:16px}
+.bar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px}.bar label{font-size:12px;color:var(--mut);display:flex;flex-direction:column;gap:3px}
+.stat{margin-left:auto;font-size:13px;color:var(--mut)}.stat b{color:var(--free)}
+.floor{margin-bottom:18px}.floor h3{margin:0 0 8px;font-size:13px;color:var(--mut);font-weight:500}.tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.tile{border-radius:12px;padding:12px;cursor:pointer;border:1px solid;transition:transform .15s}.tile:hover{transform:translateY(-3px)}
+.tile.f{background:color-mix(in srgb,var(--free) 14%,var(--pn));border-color:var(--free)}.tile.b{background:color-mix(in srgb,var(--busy) 12%,var(--pn));border-color:var(--busy)}
+.tile b{display:block;font-size:16px}.tile small{display:block;color:var(--mut)}.tag{font-size:10px;border:1px solid currentColor;border-radius:4px;padding:0 4px;margin-left:4px;color:var(--acc)}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px}.f .dot{background:var(--free)}.b .dot{background:var(--busy)}
+.scene{height:600px;perspective:1600px;overflow:hidden;position:relative;border-radius:16px;border:1px solid var(--bd);background:radial-gradient(circle at 50% 30%,color-mix(in srgb,var(--acc) 12%,var(--pn)),var(--bg))}
+.bld{position:absolute;left:50%;top:64%;width:380px;height:250px;margin:-125px 0 0 -190px;transform-style:preserve-3d;transform:rotateX(58deg) rotateZ(var(--rz,35deg))}
+.fl{position:absolute;inset:0;transform:translateZ(calc(var(--i)*var(--gap,64px)));transform-style:preserve-3d;background:rgba(140,130,220,.13);border:2px solid var(--bd);display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:12px;align-content:center}
+.fl>i{position:absolute;left:6px;top:-18px;font:8px 'Press Start 2P';color:var(--mut);font-style:normal}
+.rm{border:2px solid rgba(0,0,0,.45);border-radius:6px;padding:8px 4px;text-align:center;font-size:9px;cursor:pointer;color:#0b0b14;transform:translateZ(6px);box-shadow:0 7px 0 rgba(0,0,0,.4);transition:transform .2s;line-height:1.6}
+.rm.f{background:var(--free)}.rm.b{background:var(--busy)}.rm:hover{transform:translateZ(24px)}.rm small{display:block;font:500 9px Rubik}
+.ctl{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:10px;align-items:center;font-size:13px;color:var(--mut)}.ctl input{padding:0}
+.md{position:fixed;inset:0;background:rgba(5,4,15,.75);display:none;align-items:center;justify-content:center;padding:16px;z-index:20}.md.on{display:flex}
+.mc{background:var(--pn);border:1px solid var(--acc);border-radius:18px;padding:22px;width:100%;max-width:480px;max-height:92vh;overflow:auto}
+.big{font-size:clamp(20px,6vw,30px);margin:10px 0;color:var(--acc)}.pill{display:inline-block;padding:2px 10px;border-radius:20px;font-size:12px;font-weight:700;color:#0b0b14}.pill.f{background:var(--free)}.pill.b{background:var(--busy)}
+.tl{display:flex;gap:3px;margin:12px 0}.tl div{flex:1;height:26px;border-radius:4px;font-size:9px;display:grid;place-items:center;color:#0b0b14;background:var(--free);opacity:.85}.tl .x{background:var(--busy)}.tl .l{background:var(--bd);color:var(--mut)}.tl .n{outline:2px solid var(--ink);opacity:1}
+a.wa{display:block;text-align:center;text-decoration:none;background:#25d366;color:#06331a;font-weight:700;padding:13px;border-radius:12px;margin-top:8px}a.wa.off{background:var(--bd);color:var(--mut);pointer-events:none}
+.mut{color:var(--mut);font-size:13px}.note{font-size:12px;color:var(--mut);margin-top:12px}
+@media(max-width:600px){.scene{height:500px}.bld{transform:rotateX(58deg) rotateZ(var(--rz,35deg)) scale(.72)}}
+.sq{border:1px solid var(--free);border-radius:14px;padding:14px;background:color-mix(in srgb,var(--free) 8%,var(--bg))}.sq textarea{width:100%;margin:10px 0 0;resize:vertical}.row{display:flex;gap:6px;margin-top:8px}.row button{flex:1}.fr{display:flex;align-items:center;gap:8px;margin-bottom:6px}.fr span{flex:1}a.wa.s{margin:0;padding:6px 12px;font-size:13px}
+.cb{position:sticky;top:44px;z-index:4;display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 5vw;background:color-mix(in srgb,var(--free) 22%,var(--bg));border-bottom:1px solid var(--free);font-size:14px}
+</style></head><body>
+<header><div><span class="px">NETHER · ROUND 2 · LEVEL UP</span><h1>Free Class Locator</h1><p>Find a quiet, empty classroom the moment your lecture ends. Built from the 8 provided timetables, live to the minute.</p></div>
+<div class="clock"><div id="clk"></div><div id="dayl"></div><div class="tt"><select id="dsel"><option value="0">Mon</option><option value="1">Tue</option><option value="2">Wed</option><option value="3">Thu</option><option value="4">Fri</option></select><input type="time" id="tsel"><button id="go">Time travel</button><button class="g" id="live">Live</button></div></div></header>
+<nav><a href="#ai">AI Room Finder</a><a href="#grid">Floor Grid</a><a href="#map">3D Map</a></nav>
+<div id="cb"></div><main>
+<section id="ai"><h2>🤖 AI Room Finder</h2><div class="panel"><div class="ask"><input id="q" placeholder="I need an AC room on the ground floor for me and my team for the next 2 hours"><button id="ask">Find rooms</button></div>
+<div class="chips" id="ex"></div><div class="chips" id="pp"></div><div class="res" id="rs"></div></div></section>
+<section id="grid"><h2>🏢 Floor Grid</h2><div class="bar"><label>Floor<select id="ff"></select></label><label>Air conditioning<select id="fa"><option value="">Any</option><option value="1">AC only</option><option value="0">Non-AC</option></select></label><label>Free for at least<select id="fd"><option value="0">Any</option><option value="30">30 min</option><option value="60">1 hour</option><option value="120">2 hours</option></select></label><label>Seats ≥<select id="fc"><option value="0">Any</option><option value="30">30</option><option value="50">50</option><option value="70">70</option></select></label><span class="stat" id="st"></span></div><div id="gr"></div></section>
+<section id="map"><h2>🧊 3D Building Map</h2><div class="ctl"><label>Rotate <input type="range" id="rot" min="-80" max="80" value="35"></label><label>Explode floors <input type="range" id="gap" min="30" max="110" value="64"></label><span><span class="dot" style="background:var(--free)"></span>Free <span class="dot" style="background:var(--busy)"></span>In class · tap a room</span></div><div class="scene"><div class="bld" id="bld"></div></div></section>
+</main>
+<div class="md" id="md"><div class="mc" id="mc"></div></div>
+<script>
+const P=[[540,590],[590,640],[650,700],[700,750],[750,800],[800,850],[850,900],[910,960],[960,1010]],DN=['Monday','Tuesday','Wednesday','Thursday','Friday'];
+const S=[['IV ECE-B','227',['C A E F . . . . .','C E F B . . . . .','C D A B . . . . .','D B @108 A . . . . .','E D F . . . . . .']],
+['IV ECE-A','225',['C . A D . . . . .','C D B F . . . . .','B @108 E F . . . . .','F A E B . . . . .','C A D E . . . . .']],
+['III ECE-DS','519',['E B C A . . . . .','C B D F . @108 @108 . .','H B A C . . . @625 @625','A D E F . . . . .','D A E P . @625 . @108 @108']],
+['III ECE-B','518',['@108 @108 . . . E B A D','@625 @625 . . . F B D C','@625 . . . . P B A H','@108 @108 . . . A C E F','. . . . . C A E D']],
+['III BME','211',['@625 @625 @107 @107 . E B F H','@108 @108 @625 . . C D A B','. . . . . C A F D','. . . @108 . A C E B','@108 . . . . F A D E']],
+['III ECE-A','518',['E B B A . @625 @625 . .','H D B P . . @625 . .','C A D F . . . @108 @108','A E C F . . . . .','D A E C . @108 @108 . .']],
+['II DS-B','411',['. . @309 @309 . D B C I','@309 @309 . . . C D E A','@401 . . . . I E A D','@401 @401 @TB @TB . A C B E','@TB . . . . F A B C']],
+['II DS-A','416',['E A I I . @602 @602 @309 @309','C A E D . @602 . @TB @TB','A B C D . . @TB . .','B C A F . @309 @309 . .','D B E C . . . . .']]];
+const AC=new Set(['IST 108','IST 107','IST 309','IST 625','IST 519','IST 518','IST 602']);
+const rooms={};
+function R(n){return rooms[n]||(rooms[n]={n,f:+n.replace(/\D/g,'')[0],ac:AC.has(n),cap:/10[78]|309/.test(n)?40:/625/.test(n)?80:60,occ:[]})}
+S.forEach(([sec,home,days])=>days.forEach((row,d)=>row.split(' ').forEach((t,p)=>{if(t==='.'||p===4)return;const o=t[0]==='@';R(o?(t==='@TB'?'TB 106':'IST '+t.slice(1)):'IST '+home).occ.push([d,P[p][0],P[p][1],sec,p])})));
+const RL=Object.values(rooms).sort((a,b)=>a.n.localeCompare(b.n)),FL=[...new Set(RL.map(r=>r.f))].sort();
+const fl=f=>f==1?'Ground floor (1xx)':'Floor '+f+' ('+f+'xx)';
+const pad=n=>String(n).padStart(2,'0'),$=id=>document.getElementById(id);
+const fmt=m=>{m=Math.round(m);const h=Math.floor(m/60);return (h%12||12)+':'+pad(m%60)+' '+(h<12?'AM':'PM')};
+const dur=m=>m===Infinity?'the rest of the day':(m>=60?Math.floor(m/60)+'h ':'')+Math.round(m%60)+'m';
+let off=0;const clock=()=>{const d=new Date(Date.now()+off);return{d:d.getDay()-1,s:d.getHours()*3600+d.getMinutes()*60+d.getSeconds(),dt:d}};
+function blocks(r,d){const a=r.occ.filter(x=>x[0]==d).sort((x,y)=>x[1]-y[1]),o=[];a.forEach(x=>{const l=o[o.length-1];if(l&&x[1]-l[1]<=10){l[1]=x[2];if(!l[2].includes(x[3]))l[2]+=', '+x[3]}else o.push([x[1],x[2],x[3]])});return o}
+function status(r,t,d){if(d<0||d>4)return{busy:false,until:Infinity};const b=blocks(r,d),c=b.find(x=>x[0]<=t&&t<x[1]);if(c)return{busy:true,until:c[1],sec:c[2]};const n=b.find(x=>x[0]>t);return{busy:false,until:n?n[0]:Infinity}}
+function tile(r,st){return `<div class="tile ${st.busy?'b':'f'}" data-r="${r.n}"><b><span class="dot"></span>${r.n}${r.ac?'<span class="tag">AC</span>':''}</b><small>${st.busy?'In class till '+fmt(st.until):st.until===Infinity?'Free all day':'Free · '+dur(st.until-cur.m)+' left'}</small><small>${r.cap} seats</small>${st.busy?'':'<small style="color:var(--free)">📣 Call the Squad</small>'}</div>`}
+let cur={};
+function render(){banner();const c=clock();cur={d:c.d,m:c.s/60};$('clk').textContent=pad(c.dt.getHours())+':'+pad(c.dt.getMinutes());
+const open=c.d>=0&&c.d<=4&&cur.m>=540&&cur.m<1010;$('dayl').textContent=(c.d>=0&&c.d<=4?DN[c.d]:'Weekend')+(open?' · classes in session':' · outside class hours: every room is free');
+const fF=$('ff').value,fA=$('fa').value,fD=+$('fd').value,fC=+$('fc').value;let free=0,tot=0;let h='';
+FL.forEach(f=>{if(fF&&fF!=f)return;let t='';RL.filter(r=>r.f==f).forEach(r=>{const st=status(r,cur.m,cur.d);if(fA&&(fA=='1')!=r.ac)return;if(fC&&r.cap<fC)return;if(fD&&(st.busy||st.until-cur.m<fD))return;tot++;if(!st.busy)free++;t+=tile(r,st)});if(t)h+=`<div class="floor"><h3>${fl(f)}</h3><div class="tiles">${t}</div></div>`});
+$('gr').innerHTML=h||'<p class="mut">No rooms match these filters right now.</p>';$('st').innerHTML=`<b>${free}</b> free of ${tot} shown`;
+$('bld').innerHTML=FL.map((f,i)=>`<div class="fl" style="--i:${i}"><i>${fl(f)}</i>${RL.filter(r=>r.f==f).map(r=>{const s=status(r,cur.m,cur.d);return `<div class="rm ${s.busy?'b':'f'}" data-r="${r.n}">${r.n}<small>${s.busy?'until '+fmt(s.until):s.until===Infinity?'free all day':'free '+dur(s.until-cur.m)}</small></div>`}).join('')}</div>`).join('');}
+let open=null;
+let sq=[],claimed=null,edited=false,lastB=null;
+try{sq=JSON.parse(localStorage.getItem('sq')||'[]');claimed=localStorage.getItem('claim')}catch(e){}
+const save=()=>{try{localStorage.setItem('sq',JSON.stringify(sq));claimed?localStorage.setItem('claim',claimed):localStorage.removeItem('claim')}catch(e){}};
+const esc=x=>x.replace(/[<>&"']/g,'');
+const waU=(t,n)=>'https://wa.me/'+(n||'')+'?text='+encodeURIComponent(t);
+const msgFor=(r,st)=>`📍 Heading to ${r.n}. It's free ${st.until===Infinity?'for the rest of the day':'until '+fmt(st.until)}. Come fast!`;
+function banner(){$('cb').innerHTML=claimed?`<div class="cb"><span>🎯 You claimed <b>${claimed}</b></span><button onclick="openRoom(claimed)">📣 Call the Squad</button></div>`:''}
+function openRoom(n){open=n;edited=false;lastB=null;$('md').classList.add('on');const r=rooms[n];$('mc').innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center"><h2 style="margin:0">${n}</h2><button class="g" onclick="closeM()">✕</button></div><p class="mut">${fl(r.f)} · ${r.cap} seats · ${r.ac?'AC':'Non-AC'}</p><span class="pill" id="mp"></span><p class="mut" id="ml" style="margin:14px 0 0"></p><div class="big" id="mcd"></div><p class="mut" id="mx"></p><div class="tl" id="mtl"></div><p class="note" style="margin:0 0 10px">Periods 1–9 today · red = lecture · outlined = now</p><div id="sqd"></div>`;tick()}
+function renderSq(r,st){const el=$('sqd');
+if(st.busy){el.innerHTML='<p class="note">This room is occupied. Pick a green room to call your squad.</p>';return}
+el.innerHTML=`<a class="wa" id="wa" target="_blank" rel="noopener" onclick="autoClaim()" style="font-size:17px;padding:16px">📣 Call the Squad</a><p class="note" id="wp"></p><details class="sq" style="margin-top:12px"><summary style="cursor:pointer;font-weight:700">Edit message &amp; manage squad</summary><textarea id="mm" rows="3" oninput="edited=true;links()"></textarea><div class="row"><button class="g" onclick="share()">Share…</button><button class="g" onclick="copyM(this)">Copy</button><button class="g" onclick="release()">Release room</button></div><p class="mut" style="margin:14px 0 4px">Your squad (saved on this device only)</p><div id="fr"></div><div class="row"><input id="fnm" placeholder="Name" style="flex:1;min-width:0"><input id="fno" placeholder="WhatsApp no." inputmode="tel" style="flex:1;min-width:0"><button onclick="addF()">Add</button></div></details>`;
+edited=false;$('mm').value=msgFor(r,st);frl()}
+function autoClaim(){if(claimed!==open){claimed=open;save();banner()}}
+function frl(){$('fr').innerHTML=sq.map((f,i)=>`<div class="fr"><span>${f.n}</span><a class="wa s" data-n="${f.p}" target="_blank" rel="noopener">Invite</a><button class="g" onclick="delF(${i})">✕</button></div>`).join('')||'<p class="note" style="margin:0">Add friends to invite them one by one, or send to any chat or group with the green button.</p>';links()}
+function links(){const t=$('mm').value;$('wa').href=waU(t);$('wp').textContent='One tap opens WhatsApp with: '+t;document.querySelectorAll('a.s').forEach(a=>a.href=waU(t,a.dataset.n))}
+function addF(){let p=$('fno').value.replace(/\D/g,'');if(p.length==10)p='91'+p;if(p.length<11){$('fno').style.borderColor='var(--busy)';return}sq.push({n:esc($('fnm').value.trim())||'Friend',p});save();frl();$('fnm').value=$('fno').value='';$('fno').style.borderColor=''}
+function delF(i){sq.splice(i,1);save();frl()}
+function claim(){claimed=open;save();banner();lastB=null;tick()}
+function release(){claimed=null;save();banner();lastB=null;tick()}
+function share(){const t=$('mm').value;navigator.share?navigator.share({text:t}).catch(()=>{}):copyM()}
+function copyM(b){const t=$('mm').value;try{navigator.clipboard.writeText(t)}catch(e){$('mm').select();document.execCommand('copy')}if(b){b.textContent='Copied ✓';setTimeout(()=>b.textContent='Copy',1500)}}
+function tick(){if(!open)return;const c=clock(),r=rooms[open],m=c.s/60,st=status(r,m,c.d);
+const sec=st.until===Infinity?null:Math.max(0,Math.round(st.until*60-c.s));
+$('mp').className='pill '+(st.busy?'b':'f');$('mp').textContent=st.busy?'IN CLASS · '+(st.sec||''):'FREE NOW';
+$('ml').textContent=st.busy?'Frees up in':st.until===Infinity?'No more classes today':'Next class starts in';
+$('mcd').textContent=sec==null?'FREE ALL DAY':pad(Math.floor(sec/3600))+':'+pad(Math.floor(sec%3600/60))+':'+pad(sec%60);
+$('mx').textContent=st.busy?'Free again at '+fmt(st.until):st.until===Infinity?'':'Next lecture at '+fmt(st.until);
+$('mtl').innerHTML=[...Array(9)].map((_,p)=>{const x=r.occ.some(o=>o[0]==c.d&&o[4]==p),now=m>=P[p][0]&&m<P[p][1];return `<div class="${p==4?'l':x?'x':''} ${now?'n':''}" title="${fmt(P[p][0])}–${fmt(P[p][1])}">${p==4?'🍴':p+1}</div>`}).join('');
+if(lastB!==st.busy){lastB=st.busy;renderSq(r,st)}
+else if(!st.busy&&claimed===r.n&&!edited){$('mm').value=msgFor(r,st);links()}}
+function closeM(){open=null;$('md').classList.remove('on')}
+$('md').onclick=e=>{if(e.target.id=='md')closeM()};
+document.addEventListener('click',e=>{const t=e.target.closest('[data-r]');if(t)openRoom(t.dataset.r)});
+/* AI finder: rule-based natural-language parser */
+function parse(q){q=q.toLowerCase();const o={};let m;
+if(/non[- ]?ac|without ac|no ac/.test(q))o.ac=false;else if(/\bac\b|a\/c|air.?cond/.test(q))o.ac=true;
+const ord={first:2,second:3,third:4,fourth:5,fifth:6};
+if(/ground/.test(q))o.f=1;else if(m=q.match(/(first|second|third|fourth|fifth)\s*floor/))o.f=ord[m[1]];else if(m=q.match(/floor\s*(\d)|(\d)(?:st|nd|rd|th)?\s*floor/))o.f=+(m[1]||m[2]);
+let d=0;if(m=q.match(/(\d+(?:\.\d+)?)\s*(?:hours?|hrs?|h)\b/))d+=m[1]*60;if(m=q.match(/(\d+)\s*(?:minutes?|mins?)/))d+=+m[1];if(/half an hour/.test(q))d=30;else if(!d&&/an hour|one hour/.test(q))d=60;if(d)o.dur=Math.round(d);
+if(m=q.match(/me and (\d+)/))o.n=+m[1]+1;else if(m=q.match(/(?:team|group|squad|party) of (\d+)|(\d+)\s*(?:people|persons|members|friends|students|of us)/))o.n=+(m[1]||m[2]);
+if(m=q.match(/(?:at|from|after|by|starting)\s*(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/)){let h=+m[1];if(m[3]=='pm'&&h<12)h+=12;if(m[3]=='am'&&h==12)h=0;if(!m[3]&&h<9)h+=12;o.st=h*60+(+m[2]||0)}else if(/after lunch/.test(q))o.st=800;
+return o}
+function find(o,relax){const t0=o.st??cur.m,need=o.dur||60;return RL.map(r=>({r,s:status(r,t0,cur.d)})).filter(({r,s})=>!s.busy&&s.until-t0>=(relax?20:need)&&(relax||((o.ac==null||o.ac==r.ac)&&(!o.f||o.f==r.f)&&(!o.n||o.n<=r.cap)))).sort((a,b)=>b.s.until-a.s.until||a.r.f-b.r.f)}
+function ask(){const q=$('q').value.trim();if(!q)return;const o=parse(q),t0=o.st??cur.m,need=o.dur||60;
+$('pp').innerHTML=['Starts '+(o.st!=null?fmt(o.st):'now'),'Needs '+dur(need),o.f?fl(o.f):'Any floor',o.ac==null?'AC or not':o.ac?'AC':'Non-AC',o.n?o.n+' people':'Any group size'].map(x=>`<span class="chip on">${x}</span>`).join('');
+let L=find(o),alt=false;if(!L.length){L=find(o,true);alt=true}
+$('rs').innerHTML=(alt?'<p class="mut" style="grid-column:1/-1">No exact match. Closest free rooms instead:</p>':'')+L.slice(0,8).map(({r,s})=>`<div class="card" data-r="${r.n}"><b>${r.n}</b>${r.ac?'<span class="tag">AC</span>':''}<div class="mut">${fl(r.f)} · ${r.cap} seats</div><div style="color:var(--free);margin-top:4px">Free ${s.until===Infinity?'for the rest of the day':fmt(t0)+' → '+fmt(s.until)}</div></div>`).join('')||'<p class="mut">Nothing free then. Try a different time.</p>'}
+$('ask').onclick=ask;$('q').onkeydown=e=>{if(e.key=='Enter')ask()};
+$('ex').innerHTML=['I need an AC room on the ground floor for me and my team for the next 2 hours','Quiet non-AC room for 5 people for 90 minutes','Any room on the 5th floor at 2 pm for an hour'].map(x=>`<button class="chip" onclick="$('q').value=this.textContent;ask()">${x}</button>`).join('');
+$('ff').innerHTML='<option value="">All floors</option>'+FL.map(f=>`<option value="${f}">${fl(f)}</option>`).join('');
+['ff','fa','fd','fc'].forEach(i=>$(i).onchange=render);
+$('rot').oninput=e=>$('bld').style.setProperty('--rz',e.target.value+'deg');$('gap').oninput=e=>$('bld').style.setProperty('--gap',e.target.value+'px');
+const n0=new Date();$('dsel').value=Math.min(4,Math.max(0,n0.getDay()-1));$('tsel').value=pad(n0.getHours())+':'+pad(n0.getMinutes());
+$('go').onclick=()=>{const [h,m]=$('tsel').value.split(':'),t=new Date();t.setDate(t.getDate()+(+$('dsel').value+1-t.getDay()));t.setHours(+h,+m,0,0);off=t-Date.now();render();tick()};
+$('live').onclick=()=>{off=0;render();tick()};
+render();setInterval(tick,1000);setInterval(render,15000);
+</script></body></html>
